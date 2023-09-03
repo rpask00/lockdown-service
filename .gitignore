@@ -3,3 +3,5 @@
 .idea
 .vscode
 .fleet
+/src/bin/playground.rs
+/assets/example.json

@@ -31,3 +31,18 @@ pub async fn create_user(
         }
     }
 }
+
+pub async fn delete_user(
+    id: i32,
+    users_dao: &Box<dyn UsersDao + Sync + Send>,
+) -> Result<(), HandlerError> {
+    let user = users_dao.delete_user(id).await;
+
+    match user {
+        Ok(user) => Ok(user),
+        Err(err) => {
+            error!("{:?}", err);
+            Err(HandlerError::default_internal_error())
+        }
+    }
+}

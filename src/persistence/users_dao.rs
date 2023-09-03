@@ -27,7 +27,7 @@ impl Display for UserError {
 #[async_trait]
 pub trait UsersDao {
     async fn create_user(&self, user: UserDto) -> Result<User, DBError>;
-    // async fn delete_question(&self, question_uuid: String) -> Result<(), DBError>;
+    async fn delete_user(&self, user_id: i32) -> Result<(), DBError>;
     // async fn get_questions(&self) -> Result<Vec<QuestionDetail>, DBError>;
 }
 
@@ -76,6 +76,15 @@ impl UsersDao for UsersDaoImpl {
             email: r.email,
             created_at: r.created_at.unwrap().to_string(),
         })
+    }
+
+    async fn delete_user(&self, user_id: i32) -> Result<(), DBError> {
+        sqlx::query!("DELETE FROM users WHERE id = $1", user_id)
+            .execute(&self.db)
+            .await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+        Ok(())
     }
 }
 

@@ -29,9 +29,7 @@ async fn rocket() -> _ {
     rocket::build()
         .mount(
             "/",
-            routes![
-                create_user,
-            ],
+            app_routes(),
         )
         .attach(CORS)
         .manage(Box::new(users_dao) as Box<dyn UsersDao + Send + Sync>)

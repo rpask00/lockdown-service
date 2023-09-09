@@ -24,6 +24,18 @@ pub struct UserDto {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct Credentials {
+    pub username: String,
+    pub password: String,
+}
+#[derive(Serialize, Deserialize)]
+pub struct LoginResponse {
+    pub user: User,
+    pub token: String,
+}
+
+
+#[derive(Serialize, Deserialize)]
 pub struct UserUpdateDto {
     pub username: Option<String>,
     pub first_name: Option<String>,

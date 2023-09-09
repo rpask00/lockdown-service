@@ -17,7 +17,7 @@ impl HandlerError {
     }
 }
 
-pub async fn get_user(id:i32, users_dao: &Box<dyn UsersDao + Sync + Send>,
+pub async fn  get_user(id:i32, users_dao: &Box<dyn UsersDao + Sync + Send>,
 ) -> Result<User, HandlerError> {
     let user = users_dao.get_user(id).await;
 

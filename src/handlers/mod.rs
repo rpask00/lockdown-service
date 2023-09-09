@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use jsonwebtoken::EncodingKey;
 use rocket::{delete, get, post, put, Responder, routes, serde::json::Json, State};
 
 use handlers_inner::*;
@@ -6,6 +8,7 @@ use crate::{
     models::*,
     persistence::users_dao::UsersDao,
 };
+use crate::persistence::users_dao;
 
 mod handlers_inner;
 
@@ -15,6 +18,8 @@ pub enum APIError {
     BadRequest(String),
     #[response(status = 500)]
     InternalError(String),
+    #[response(status = 401)]
+    InvalidCredentials(String),
 }
 
 impl From<HandlerError> for APIError {
@@ -25,6 +30,19 @@ impl From<HandlerError> for APIError {
         }
     }
 }
+
+#[post("/login", data = "<credentials>")]
+pub async fn login(
+    credentials: Json<Credentials>,
+    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
+    jwt_encoding_key: &State<EncodingKey>,
+) -> Result<Json<LoginResponse>, APIError> {
+    match users_dao.login(credentials.0, jwt_encoding_key.inner()).await {
+        Ok(u) => Ok(Json(u)),
+        Err(err) => Err(APIError::InvalidCredentials(err.to_string())),
+    }
+}
+
 
 #[get("/user/<id>")]
 pub async fn get_user(
@@ -75,6 +93,7 @@ pub async fn delete_user(
 
 pub fn app_routes() -> Vec<rocket::Route> {
     routes![
+        login,
         get_user,
         create_user,
         update_user,

@@ -1,6 +1,9 @@
+use std::convert::Infallible;
 use std::sync::Arc;
 use jsonwebtoken::EncodingKey;
-use rocket::{delete, get, post, put, Responder, routes, serde::json::Json, State};
+use rocket::{delete, get, post, put, Request, Responder, routes, serde::json::Json, State};
+use rocket::http::Status;
+use rocket::request::{FromRequest, Outcome};
 
 use handlers_inner::*;
 
@@ -11,6 +14,27 @@ use crate::{
 use crate::persistence::users_dao;
 
 mod handlers_inner;
+
+
+pub struct Token(pub(crate) String);
+
+#[derive(Debug)]
+pub enum TokenError {
+    Missing,
+    Invalid,
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Token {
+    type Error = TokenError;
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let token = match request.headers().get_one("token") {
+            Some(token) => token,
+            None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
+        };
+
+        Outcome::Success(Token(token.to_string()))
+    }
+}
 
 #[derive(Responder)]
 pub enum APIError {
@@ -41,6 +65,12 @@ pub async fn login(
         Ok(u) => Ok(Json(u)),
         Err(err) => Err(APIError::InvalidCredentials(err.to_string())),
     }
+}
+
+#[post("/logout")]
+pub async fn logout(token: Token, users_dao: &State<Box<dyn UsersDao + Sync + Send>>) -> Result<(), APIError> {
+    users_dao.logout(token).await.map_err(|e| APIError::InternalError(e.to_string()))?;
+    Ok(())
 }
 
 
@@ -94,6 +124,7 @@ pub async fn delete_user(
 pub fn app_routes() -> Vec<rocket::Route> {
     routes![
         login,
+        logout,
         get_user,
         create_user,
         update_user,

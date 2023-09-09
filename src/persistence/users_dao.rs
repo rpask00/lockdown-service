@@ -9,6 +9,7 @@ use thiserror::Error;
 use sqlx::{Execute, PgPool};
 
 use crate::models::{Credentials, DBError, LoginResponse, User, UserDto, UserUpdateDto};
+use crate::Token;
 
 #[derive(Debug, Error)]
 enum UserError {
@@ -28,6 +29,7 @@ impl Display for UserError {
 #[async_trait]
 pub trait UsersDao {
     async fn login(&self, credentials: Credentials, jwt_encoding_key: &EncodingKey) -> Result<LoginResponse, DBError>;
+    async fn logout(&self, token: Token) -> Result<(), DBError>;
     async fn get_user(&self, id: i32) -> Result<User, DBError>;
     async fn create_user(&self, user: UserDto) -> Result<User, DBError>;
     async fn update_user(&self, user: UserUpdateDto, user_id: i32) -> Result<User, DBError>;
@@ -94,6 +96,16 @@ impl UsersDao for UsersDaoImpl {
             user,
             token,
         })
+    }
+
+    async fn logout(&self, token: Token) -> Result<(), DBError> {
+       sqlx::query("INSERT INTO token_blacklist (token) VALUES ($1)")
+            .bind(token.0)
+            .execute(&self.db)
+            .await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+        Ok(())
     }
 
     async fn get_user(&self, id: i32) -> Result<User, DBError> {

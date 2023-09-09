@@ -1,3 +1,6 @@
+use rocket::data::{ByteUnit, FromData, Outcome};
+use rocket::{Data, Request};
+use rocket::serde::json::serde_json;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -19,6 +22,15 @@ pub struct UserDto {
     pub last_name: String,
     pub email: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct UserUpdateDto {
+    pub username: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub email: Option<String>,
+}
+
 
 #[derive(Error, Debug)]
 pub enum DBError {

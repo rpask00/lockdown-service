@@ -1,4 +1,4 @@
-use rocket::{delete, post, Responder, routes, serde::json::Json, State};
+use rocket::{delete, get, post, put, Responder, routes, serde::json::Json, State};
 
 use handlers_inner::*;
 
@@ -26,12 +26,35 @@ impl From<HandlerError> for APIError {
     }
 }
 
+#[get("/user/<id>")]
+pub async fn get_user(
+    id: i32,
+    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
+) -> Result<Json<User>, APIError> {
+    match handlers_inner::get_user(id, users_dao.inner()).await {
+        Ok(u) => Ok(Json(u)),
+        Err(err) => Err(err.into()),
+    }
+}
+
 #[post("/user", data = "<user>")]
 pub async fn create_user(
     user: Json<UserDto>,
     users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
 ) -> Result<Json<User>, APIError> {
     match handlers_inner::create_user(user.0, users_dao.inner()).await {
+        Ok(u) => Ok(Json(u)),
+        Err(err) => Err(err.into()),
+    }
+}
+
+#[put("/user/<id>", data = "<user>")]
+pub async fn update_user(
+    user: Json<UserUpdateDto>,
+    id: i32,
+    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
+) -> Result<Json<User>, APIError> {
+    match handlers_inner::update_user(user.0, id, users_dao.inner()).await {
         Ok(u) => Ok(Json(u)),
         Err(err) => Err(err.into()),
     }
@@ -52,7 +75,9 @@ pub async fn delete_user(
 
 pub fn app_routes() -> Vec<rocket::Route> {
     routes![
+        get_user,
         create_user,
+        update_user,
         delete_user
     ]
 }

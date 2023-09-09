@@ -7,7 +7,7 @@ use rand::random;
 use thiserror::Error;
 use sqlx::{Execute, PgPool};
 
-use crate::models::{DBError, User, UserDto};
+use crate::models::{DBError, User, UserDto, UserUpdateDto};
 
 #[derive(Debug, Error)]
 enum UserError {
@@ -26,7 +26,9 @@ impl Display for UserError {
 
 #[async_trait]
 pub trait UsersDao {
+    async fn get_user(&self, id: i32) -> Result<User, DBError>;
     async fn create_user(&self, user: UserDto) -> Result<User, DBError>;
+    async fn update_user(&self, user: UserUpdateDto, user_id: i32) -> Result<User, DBError>;
     async fn delete_user(&self, user_id: i32) -> Result<(), DBError>;
     // async fn get_questions(&self) -> Result<Vec<QuestionDetail>, DBError>;
 }
@@ -43,6 +45,26 @@ impl UsersDaoImpl {
 
 #[async_trait]
 impl UsersDao for UsersDaoImpl {
+    async fn get_user(&self, id: i32) -> Result<User, DBError> {
+        let record = sqlx::query!(
+            r#"
+                SELECT * FROM users WHERE id = $1
+            "#,
+            id
+        ).fetch_one(&self.db)
+            .await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+        Ok(User {
+            id: record.id,
+            username: record.username,
+            first_name: record.first_name,
+            last_name: record.last_name,
+            email: record.email,
+            created_at: record.created_at.unwrap().to_string(),
+        })
+    }
+
     async fn create_user(&self, user: UserDto) -> Result<User, DBError> {
         let salt = random();
         // Concatenate the password and salt, then hash it
@@ -51,7 +73,7 @@ impl UsersDao for UsersDaoImpl {
             Err(_) => return Err(DBError::Other(Box::new(UserError::Other))),
         };
 
-        let r = sqlx::query!(
+        let record = sqlx::query!(
             r#"
                 INSERT INTO users ( username, first_name, last_name,password, email, salt )
                 VALUES ( $1, $2, $3, $4, $5, $6 )
@@ -69,13 +91,48 @@ impl UsersDao for UsersDaoImpl {
 
 
         Ok(User {
-            id: r.id,
-            username: r.username,
-            first_name: r.first_name,
-            last_name: r.last_name,
-            email: r.email,
-            created_at: r.created_at.unwrap().to_string(),
+            id: record.id,
+            username: record.username,
+            first_name: record.first_name,
+            last_name: record.last_name,
+            email: record.email,
+            created_at: record.created_at.unwrap().to_string(),
         })
+    }
+
+    async fn update_user(&self, user_update: UserUpdateDto, user_id: i32) -> Result<User, DBError> {
+        let mut user = self.get_user(user_id).await?;
+
+        if let Some(username) = user_update.username {
+            user.username = username;
+        }
+        if let Some(first_name) = user_update.first_name {
+            user.first_name = first_name;
+        }
+        if let Some(last_name) = user_update.last_name {
+            user.last_name = last_name;
+        }
+        if let Some(email) = user_update.email {
+            user.email = email;
+        }
+
+        sqlx::query!(
+            r#"
+                UPDATE users
+                SET username = $1, first_name = $2, last_name = $3, email = $4
+                WHERE id = $5
+                RETURNING *
+            "#,
+            user.username,
+            user.first_name,
+            user.last_name,
+            user.email,
+            user_id
+        ).fetch_one(&self.db)
+            .await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+        Ok(user)
     }
 
     async fn delete_user(&self, user_id: i32) -> Result<(), DBError> {

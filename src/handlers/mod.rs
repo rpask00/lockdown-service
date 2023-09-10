@@ -9,6 +9,7 @@ use crate::{
     models::*,
     persistence::users_dao::UsersDao,
 };
+use crate::persistence::auth_dao::AuthDao;
 
 mod handlers_inner;
 
@@ -54,7 +55,6 @@ impl<'r> FromRequest<'r> for User {
             Err(e) => return Outcome::Failure((Status::Unauthorized, TokenError::Invalid))
         };
 
-        println!("user_id: {}", user_id);
 
         return match user_dao.get_user(user_id).await {
             Ok(user) => Outcome::Success(user),
@@ -85,18 +85,18 @@ impl From<HandlerError> for APIError {
 #[post("/login", data = "<credentials>")]
 pub async fn login(
     credentials: Json<Credentials>,
-    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
+    auth_dao: &State<Box<dyn AuthDao + Sync + Send>>,
     jwt_encoding_key: &State<EncodingKey>,
 ) -> Result<Json<LoginResponse>, APIError> {
-    match users_dao.login(credentials.0, jwt_encoding_key.inner()).await {
+    match auth_dao.login(credentials.0, jwt_encoding_key.inner()).await {
         Ok(u) => Ok(Json(u)),
         Err(err) => Err(APIError::InvalidCredentials(err.to_string())),
     }
 }
 
 #[post("/logout")]
-pub async fn logout(token: Token, users_dao: &State<Box<dyn UsersDao + Sync + Send>>) -> Result<(), APIError> {
-    users_dao.logout(token).await.map_err(|e| APIError::InternalError(e.to_string()))?;
+pub async fn logout(token: Token, auth_dao: &State<Box<dyn AuthDao + Sync + Send>>) -> Result<(), APIError> {
+    auth_dao.logout(token).await.map_err(|e| APIError::InternalError(e.to_string()))?;
     Ok(())
 }
 

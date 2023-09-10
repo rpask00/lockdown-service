@@ -1,25 +1,9 @@
-use rocket::data::FromData;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Serialize, Deserialize)]
-pub struct User {
-    pub id: i32,
-    pub username: String,
-    pub first_name: String,
-    pub last_name: String,
-    pub email: String,
-    pub created_at: String,
-}
+use crate::models::user_model::User;
 
-#[derive(Serialize, Deserialize)]
-pub struct UserDto {
-    pub username: String,
-    pub password: String,
-    pub first_name: String,
-    pub last_name: String,
-    pub email: String,
-}
+pub mod user_model;
 
 #[derive(Serialize, Deserialize)]
 pub struct Credentials {
@@ -36,15 +20,6 @@ pub struct LoginResponse {
 pub struct TokenClamis {
     pub sub: i32,
     pub exp: usize,
-}
-
-
-#[derive(Serialize, Deserialize)]
-pub struct UserUpdateDto {
-    pub username: Option<String>,
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub email: Option<String>,
 }
 
 

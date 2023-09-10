@@ -1,14 +1,10 @@
-use jsonwebtoken::{DecodingKey, Validation};
 use rocket::{Request, Responder, routes};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 
 use handlers_inner::*;
 
-use crate::{
-    models::*,
-    persistence::users_dao::UsersDao,
-};
+use crate::persistence::users_dao::UsersDao;
 
 mod handlers_inner;
 mod user_handler;
@@ -36,33 +32,6 @@ impl<'r> FromRequest<'r> for Token {
 }
 
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = TokenError;
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let decoding_key = request.rocket().state::<DecodingKey>().unwrap();
-        let user_dao = request.rocket().state::<Box<dyn UsersDao + Sync + Send>>().unwrap();
-
-        let token = match request.headers().get_one("token") {
-            Some(token) => token,
-            None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
-        };
-
-        let decoded_claims = jsonwebtoken::decode::<TokenClamis>(token, decoding_key, &Validation::default());
-
-        let user_id = match decoded_claims {
-            Ok(token_claims) => token_claims.claims.sub,
-            Err(e) => return Outcome::Failure((Status::Unauthorized, TokenError::Invalid))
-        };
-
-
-        return match user_dao.get_user(user_id).await {
-            Ok(user) => Outcome::Success(user),
-            Err(e) => Outcome::Failure((Status::Unauthorized, TokenError::Invalid))
-        };
-    }
-}
-
 #[derive(Responder)]
 pub enum APIError {
     #[response(status = 400)]
@@ -81,8 +50,6 @@ impl From<HandlerError> for APIError {
         }
     }
 }
-
-
 
 
 pub fn app_routes() -> Vec<rocket::Route> {

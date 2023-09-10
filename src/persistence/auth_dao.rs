@@ -7,7 +7,8 @@ use jsonwebtoken::EncodingKey;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::{Credentials, DBError, LoginResponse, TokenClamis, User};
+use crate::models::{Credentials, DBError, LoginResponse, TokenClamis};
+use crate::models::user_model::User;
 use crate::Token;
 
 #[async_trait]

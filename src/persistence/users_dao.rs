@@ -7,7 +7,8 @@ use rand::random;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::{DBError, User, UserDto, UserUpdateDto};
+use crate::models::DBError;
+use crate::models::user_model::{User, UserDto, UserUpdateDto};
 
 #[derive(Debug, Error)]
 enum UserError {

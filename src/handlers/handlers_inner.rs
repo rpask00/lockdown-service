@@ -1,9 +1,7 @@
 use log::error;
-use crate::{
-    models::{User},
-    persistence::{users_dao::UsersDao},
-};
-use crate::models::{DBError, UserDto, UserUpdateDto};
+
+use crate::persistence::users_dao::UsersDao;
+use crate::models::user_model::{User, UserDto, UserUpdateDto};
 
 #[derive(Debug, PartialEq)]
 pub enum HandlerError {

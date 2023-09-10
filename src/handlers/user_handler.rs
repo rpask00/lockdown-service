@@ -1,8 +1,9 @@
 use rocket::{delete, get, post, put, serde::json::Json, State};
 use rocket::request::FromRequest;
 
-use crate::{APIError, models::*, persistence::users_dao::UsersDao};
+use crate::{APIError, persistence::users_dao::UsersDao};
 use crate::handlers::handlers_inner;
+use crate::models::user_model::{User, UserDto, UserUpdateDto};
 
 #[get("/user/<id>")]
 pub async fn get_user(

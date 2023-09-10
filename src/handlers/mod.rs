@@ -1,5 +1,5 @@
-use jsonwebtoken::{DecodingKey, EncodingKey, Validation};
-use rocket::{delete, get, post, put, Request, Responder, routes, serde::json::Json, State};
+use jsonwebtoken::{DecodingKey, Validation};
+use rocket::{Request, Responder, routes};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 
@@ -9,10 +9,10 @@ use crate::{
     models::*,
     persistence::users_dao::UsersDao,
 };
-use crate::persistence::auth_dao::AuthDao;
 
 mod handlers_inner;
-
+mod user_handler;
+mod auth_handler;
 
 pub struct Token(pub(crate) String);
 
@@ -82,80 +82,18 @@ impl From<HandlerError> for APIError {
     }
 }
 
-#[post("/login", data = "<credentials>")]
-pub async fn login(
-    credentials: Json<Credentials>,
-    auth_dao: &State<Box<dyn AuthDao + Sync + Send>>,
-    jwt_encoding_key: &State<EncodingKey>,
-) -> Result<Json<LoginResponse>, APIError> {
-    match auth_dao.login(credentials.0, jwt_encoding_key.inner()).await {
-        Ok(u) => Ok(Json(u)),
-        Err(err) => Err(APIError::InvalidCredentials(err.to_string())),
-    }
-}
 
-#[post("/logout")]
-pub async fn logout(token: Token, auth_dao: &State<Box<dyn AuthDao + Sync + Send>>) -> Result<(), APIError> {
-    auth_dao.logout(token).await.map_err(|e| APIError::InternalError(e.to_string()))?;
-    Ok(())
-}
-
-
-#[get("/user/<id>")]
-pub async fn get_user(
-    _user: User,
-    id: i32,
-    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
-) -> Result<Json<User>, APIError> {
-    match handlers_inner::get_user(id, users_dao.inner()).await {
-        Ok(u) => Ok(Json(u)),
-        Err(err) => Err(err.into()),
-    }
-}
-
-#[post("/user", data = "<user>")]
-pub async fn create_user(
-    user: Json<UserDto>,
-    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
-) -> Result<Json<User>, APIError> {
-    match handlers_inner::create_user(user.0, users_dao.inner()).await {
-        Ok(u) => Ok(Json(u)),
-        Err(err) => Err(err.into()),
-    }
-}
-
-#[put("/user/<id>", data = "<user>")]
-pub async fn update_user(
-    user: Json<UserUpdateDto>,
-    id: i32,
-    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
-) -> Result<Json<User>, APIError> {
-    match handlers_inner::update_user(user.0, id, users_dao.inner()).await {
-        Ok(u) => Ok(Json(u)),
-        Err(err) => Err(err.into()),
-    }
-}
-
-
-#[delete("/user/<id>")]
-pub async fn delete_user(
-    id: i32,
-    users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
-) -> Result<(), APIError> {
-    match handlers_inner::delete_user(id, users_dao.inner()).await {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err.into()),
-    }
-}
 
 
 pub fn app_routes() -> Vec<rocket::Route> {
     routes![
-        login,
-        logout,
-        get_user,
-        create_user,
-        update_user,
-        delete_user
+        // AUTH
+        auth_handler::login,
+        auth_handler::logout,
+        // USER
+        user_handler::get_user,
+        user_handler::create_user,
+        user_handler::update_user,
+        user_handler::delete_user
     ]
 }

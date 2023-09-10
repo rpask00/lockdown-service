@@ -1,6 +1,4 @@
-use rocket::data::{ByteUnit, FromData, Outcome};
-use rocket::{Data, Request};
-use rocket::serde::json::serde_json;
+use rocket::data::FromData;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -32,6 +30,12 @@ pub struct Credentials {
 pub struct LoginResponse {
     pub user: User,
     pub token: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TokenClamis {
+    pub sub: i32,
+    pub exp: usize,
 }
 
 

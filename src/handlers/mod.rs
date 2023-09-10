@@ -1,6 +1,4 @@
-use std::convert::Infallible;
-use std::sync::Arc;
-use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{DecodingKey, EncodingKey, Validation};
 use rocket::{delete, get, post, put, Request, Responder, routes, serde::json::Json, State};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
@@ -11,7 +9,6 @@ use crate::{
     models::*,
     persistence::users_dao::UsersDao,
 };
-use crate::persistence::users_dao;
 
 mod handlers_inner;
 
@@ -23,6 +20,7 @@ pub enum TokenError {
     Missing,
     Invalid,
 }
+
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for Token {
     type Error = TokenError;
@@ -33,6 +31,35 @@ impl<'r> FromRequest<'r> for Token {
         };
 
         Outcome::Success(Token(token.to_string()))
+    }
+}
+
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for User {
+    type Error = TokenError;
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let decoding_key = request.rocket().state::<DecodingKey>().unwrap();
+        let user_dao = request.rocket().state::<Box<dyn UsersDao + Sync + Send>>().unwrap();
+
+        let token = match request.headers().get_one("token") {
+            Some(token) => token,
+            None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
+        };
+
+        let decoded_claims = jsonwebtoken::decode::<TokenClamis>(token, decoding_key, &Validation::default());
+
+        let user_id = match decoded_claims {
+            Ok(token_claims) => token_claims.claims.sub,
+            Err(e) => return Outcome::Failure((Status::Unauthorized, TokenError::Invalid))
+        };
+
+        println!("user_id: {}", user_id);
+
+        return match user_dao.get_user(user_id).await {
+            Ok(user) => Outcome::Success(user),
+            Err(e) => Outcome::Failure((Status::Unauthorized, TokenError::Invalid))
+        };
     }
 }
 
@@ -76,6 +103,7 @@ pub async fn logout(token: Token, users_dao: &State<Box<dyn UsersDao + Sync + Se
 
 #[get("/user/<id>")]
 pub async fn get_user(
+    _user: User,
     id: i32,
     users_dao: &State<Box<dyn UsersDao + Sync + Send>>,
 ) -> Result<Json<User>, APIError> {

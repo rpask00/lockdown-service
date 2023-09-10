@@ -1,17 +1,19 @@
-use rocket::{launch, routes};
+extern crate pretty_env_logger;
+
 use dotenvy::dotenv;
+use jsonwebtoken::{DecodingKey, EncodingKey};
+use rocket::launch;
 use sqlx::postgres::PgPoolOptions;
+
+pub use handlers::*;
+
 use crate::cors::CORS;
 use crate::persistence::users_dao::{UsersDao, UsersDaoImpl};
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+
 mod cors;
 mod models;
 mod handlers;
 mod persistence;
-
-extern crate pretty_env_logger;
-pub use handlers::*;
-
 
 #[launch]
 async fn rocket() -> _ {
@@ -19,9 +21,8 @@ async fn rocket() -> _ {
     dotenv().ok();
 
     let secret_key = &std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY not found");
-    let jwt_secret = secret_key.as_bytes();
-    let jwt_encoding_key = EncodingKey::from_secret(jwt_secret);
-    let jwt_decoding_key = DecodingKey::from_secret(jwt_secret);
+    let jwt_encoding_key = EncodingKey::from_secret(secret_key.as_bytes());
+    let jwt_decoding_key = DecodingKey::from_secret(secret_key.as_bytes());
 
 
     let pool = PgPoolOptions::new()

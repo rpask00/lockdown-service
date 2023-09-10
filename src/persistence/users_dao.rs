@@ -5,10 +5,10 @@ use base64::{Engine as _, engine::general_purpose};
 use bcrypt::{DEFAULT_COST, hash_with_salt};
 use jsonwebtoken::EncodingKey;
 use rand::random;
+use sqlx::PgPool;
 use thiserror::Error;
-use sqlx::{Execute, PgPool};
 
-use crate::models::{Credentials, DBError, LoginResponse, User, UserDto, UserUpdateDto};
+use crate::models::{Credentials, DBError, LoginResponse, TokenClamis, User, UserDto, UserUpdateDto};
 use crate::Token;
 
 #[derive(Debug, Error)]
@@ -85,15 +85,19 @@ impl UsersDao for UsersDaoImpl {
             email: record.email,
             created_at: record.created_at.unwrap().to_string(),
         };
+        let claims = TokenClamis {
+            sub: user.id,
+            exp: (chrono::Utc::now() + chrono::Duration::days(7)).timestamp() as usize,
+        };
 
         let token = jsonwebtoken::encode(
             &jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS256),
-            &user,
+            &claims,
             &jwt_encoding_key,
         ).unwrap();
 
         Ok(LoginResponse {
-            user,
+            user: user,
             token,
         })
     }

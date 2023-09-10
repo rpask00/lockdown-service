@@ -4,6 +4,7 @@ use rocket::Request;
 use rocket::request::{FromRequest, Outcome};
 
 use crate::{models::*, persistence::users_dao::UsersDao, TokenError};
+use crate::models::auth_model::TokenClaims;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {

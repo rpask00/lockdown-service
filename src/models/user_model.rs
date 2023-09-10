@@ -1,6 +1,6 @@
 use jsonwebtoken::{DecodingKey, Validation};
-use rocket::Request;
 use rocket::http::Status;
+use rocket::Request;
 use rocket::request::{FromRequest, Outcome};
 
 use crate::{models::*, persistence::users_dao::UsersDao, TokenError};
@@ -45,7 +45,7 @@ impl<'r> FromRequest<'r> for User {
             None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
         };
 
-        let decoded_claims = jsonwebtoken::decode::<TokenClamis>(token, decoding_key, &Validation::default());
+        let decoded_claims = jsonwebtoken::decode::<TokenClaims>(token, decoding_key, &Validation::default());
 
         let user_id = match decoded_claims {
             Ok(token_claims) => token_claims.claims.sub,

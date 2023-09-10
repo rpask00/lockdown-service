@@ -1,7 +1,8 @@
 use jsonwebtoken::EncodingKey;
 use rocket::{post, serde::json::Json, State};
 
-use crate::{APIError, models::*, Token};
+use crate::{APIError, Token};
+use crate::models::auth_model::{Credentials, LoginResponse};
 use crate::persistence::auth_dao::AuthDao;
 
 #[post("/login", data = "<credentials>")]

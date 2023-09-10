@@ -7,7 +7,8 @@ use jsonwebtoken::EncodingKey;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::{Credentials, DBError, LoginResponse, TokenClamis};
+use crate::models::DBError;
+use crate::models::auth_model::{Credentials, LoginResponse, TokenClaims};
 use crate::models::user_model::User;
 use crate::Token;
 
@@ -83,7 +84,7 @@ impl AuthDao for AuthDaoImpl {
             email: record.email,
             created_at: record.created_at.unwrap().to_string(),
         };
-        let claims = TokenClamis {
+        let claims = TokenClaims {
             sub: user.id,
             exp: (chrono::Utc::now() + chrono::Duration::days(7)).timestamp() as usize,
         };
@@ -95,7 +96,7 @@ impl AuthDao for AuthDaoImpl {
         ).unwrap();
 
         Ok(LoginResponse {
-            user: user,
+            user,
             token,
         })
     }

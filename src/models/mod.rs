@@ -4,24 +4,7 @@ use thiserror::Error;
 use crate::models::user_model::User;
 
 pub mod user_model;
-
-#[derive(Serialize, Deserialize)]
-pub struct Credentials {
-    pub username: String,
-    pub password: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LoginResponse {
-    pub user: User,
-    pub token: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct TokenClamis {
-    pub sub: i32,
-    pub exp: usize,
-}
+pub mod auth_model;
 
 
 #[derive(Error, Debug)]

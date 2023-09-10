@@ -4,8 +4,6 @@ use rocket::request::{FromRequest, Outcome};
 
 use handlers_inner::*;
 
-use crate::persistence::users_dao::UsersDao;
-
 mod handlers_inner;
 mod user_handler;
 mod auth_handler;

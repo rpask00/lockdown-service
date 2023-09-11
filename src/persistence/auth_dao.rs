@@ -7,8 +7,8 @@ use jsonwebtoken::EncodingKey;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::models::DBError;
 use crate::models::auth_model::{Credentials, LoginResponse, TokenClaims};
+use crate::models::DBError;
 use crate::models::user_model::User;
 use crate::Token;
 
@@ -16,6 +16,7 @@ use crate::Token;
 pub trait AuthDao {
     async fn login(&self, credentials: Credentials, jwt_encoding_key: &EncodingKey) -> Result<LoginResponse, DBError>;
     async fn logout(&self, token: Token) -> Result<(), DBError>;
+    async fn token_blacklisted(&self, token: Token) -> Result<bool, DBError>;
 }
 
 
@@ -109,5 +110,18 @@ impl AuthDao for AuthDaoImpl {
             .map_err(|e| DBError::Other(Box::new(e)))?;
 
         Ok(())
+    }
+
+    async fn token_blacklisted(&self, token: Token) -> Result<bool, DBError> {
+        let record = sqlx::query!(
+            r#"
+               SELECT COUNT(*) as c FROM token_blacklist WHERE token = $1
+            "#,
+            token.0
+        ).fetch_one(&self.db)
+            .await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+        Ok(record.c.unwrap() > 0)
     }
 }

@@ -3,8 +3,9 @@ use rocket::http::Status;
 use rocket::Request;
 use rocket::request::{FromRequest, Outcome};
 
-use crate::{models::*, persistence::users_dao::UsersDao, TokenError};
+use crate::{models::*, persistence::users_dao::UsersDao, Token, TokenError};
 use crate::models::auth_model::TokenClaims;
+use crate::persistence::auth_dao::AuthDao;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -40,11 +41,18 @@ impl<'r> FromRequest<'r> for User {
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let decoding_key = request.rocket().state::<DecodingKey>().unwrap();
         let user_dao = request.rocket().state::<Box<dyn UsersDao + Sync + Send>>().unwrap();
+        let auth_dao = request.rocket().state::<Box<dyn AuthDao + Sync + Send>>().unwrap();
 
         let token = match request.headers().get_one("token") {
             Some(token) => token,
             None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
         };
+
+        let token_blacklisted = auth_dao.token_blacklisted(Token(token.to_string())).await.map_err(|_| true).unwrap();
+
+        if token_blacklisted {
+            return Outcome::Failure((Status::Unauthorized, TokenError::Invalid));
+        }
 
         let decoded_claims = jsonwebtoken::decode::<TokenClaims>(token, decoding_key, &Validation::default());
 

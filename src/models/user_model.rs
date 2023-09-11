@@ -3,7 +3,8 @@ use rocket::http::Status;
 use rocket::Request;
 use rocket::request::{FromRequest, Outcome};
 
-use crate::{models::*, persistence::users_dao::UsersDao, Token, TokenError};
+use crate::{models::*, persistence::users_dao::UsersDao};
+use crate::handlers::auth_handler::{Token, TokenError};
 use crate::models::auth_model::TokenClaims;
 use crate::persistence::auth_dao::AuthDao;
 

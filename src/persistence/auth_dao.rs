@@ -7,10 +7,10 @@ use jsonwebtoken::EncodingKey;
 use sqlx::PgPool;
 use thiserror::Error;
 
+use crate::auth_handler::Token;
 use crate::models::auth_model::{Credentials, LoginResponse, TokenClaims};
 use crate::models::DBError;
 use crate::models::user_model::User;
-use crate::Token;
 
 #[async_trait]
 pub trait AuthDao {

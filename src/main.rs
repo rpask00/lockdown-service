@@ -37,7 +37,7 @@ async fn rocket() -> _ {
 
     rocket::build()
         .mount(
-            "/",
+            "/api",
             app_routes(),
         )
         .attach(CORS)

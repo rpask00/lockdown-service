@@ -10,7 +10,7 @@ default-run = "lockdown-service"
 #rusqlite = "0.26"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
-rocket = { version="0.5.0-rc.2", features=["json"] }
+rocket = { version = "0.5.0-rc.2", features = ["json", "secrets"] }
 sqlx = { version = "0.6", features = [ "runtime-tokio-rustls" , "postgres", "time", "uuid"] }
 thiserror = "1.0.47"
 dotenvy = "0.15"
@@ -22,3 +22,4 @@ rand = "0.8.5"
 base64 = "0.21.3"
 jsonwebtoken = "8.3.0"
 chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0.75"

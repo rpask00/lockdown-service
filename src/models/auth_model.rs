@@ -1,7 +1,5 @@
 use rocket::serde::{Deserialize, Serialize};
 
-use crate::models::user_model::User;
-
 #[derive(Serialize, Deserialize)]
 pub struct Credentials {
     pub username: String,
@@ -9,11 +7,6 @@ pub struct Credentials {
 }
 
 
-#[derive(Serialize, Deserialize)]
-pub struct LoginResponse {
-    pub user: User,
-    pub token: String,
-}
 
 
 #[derive(Serialize, Deserialize)]

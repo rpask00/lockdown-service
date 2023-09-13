@@ -8,13 +8,13 @@ use sqlx::PgPool;
 use thiserror::Error;
 
 use crate::auth_handler::Token;
-use crate::models::auth_model::{Credentials, LoginResponse, TokenClaims};
+use crate::models::auth_model::{Credentials, TokenClaims};
 use crate::models::DBError;
 use crate::models::user_model::User;
 
 #[async_trait]
 pub trait AuthDao {
-    async fn login(&self, credentials: Credentials, jwt_encoding_key: &EncodingKey) -> Result<LoginResponse, DBError>;
+    async fn login(&self, credentials: Credentials, jwt_encoding_key: &EncodingKey) -> Result<(User, Token), DBError>;
     async fn logout(&self, token: Token) -> Result<(), DBError>;
     async fn token_blacklisted(&self, token: Token) -> Result<bool, DBError>;
 }
@@ -49,7 +49,7 @@ impl Display for AuthError {
 
 #[async_trait]
 impl AuthDao for AuthDaoImpl {
-    async fn login(&self, credentials: Credentials, jwt_encoding_key: &EncodingKey) -> Result<LoginResponse, DBError> {
+    async fn login(&self, credentials: Credentials, jwt_encoding_key: &EncodingKey) -> Result<(User, Token), DBError> {
         let record = sqlx::query!(
             r#"
                 SELECT * FROM users WHERE username = $1
@@ -96,10 +96,7 @@ impl AuthDao for AuthDaoImpl {
             &jwt_encoding_key,
         ).unwrap();
 
-        Ok(LoginResponse {
-            user,
-            token,
-        })
+        Ok((user, Token(token)))
     }
 
     async fn logout(&self, token: Token) -> Result<(), DBError> {

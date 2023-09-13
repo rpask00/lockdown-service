@@ -1,11 +1,12 @@
 use jsonwebtoken::EncodingKey;
 use rocket::{get, post, Request, State};
+use rocket::http::{Cookie, CookieJar};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
 
 use crate::APIError;
-use crate::models::auth_model::{Credentials, LoginResponse};
+use crate::models::auth_model::Credentials;
 use crate::models::user_model::User;
 use crate::persistence::auth_dao::AuthDao;
 
@@ -21,7 +22,7 @@ pub enum TokenError {
 impl<'r> FromRequest<'r> for Token {
     type Error = TokenError;
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let token = match request.headers().get_one("token") {
+        let token = match request.cookies().get("Authorization") {
             Some(token) => token,
             None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
         };
@@ -31,13 +32,17 @@ impl<'r> FromRequest<'r> for Token {
 }
 
 #[post("/login", data = "<credentials>")]
-pub async fn login(
+pub async fn login<'a>(
     credentials: Json<Credentials>,
     auth_dao: &State<Box<dyn AuthDao + Sync + Send>>,
     jwt_encoding_key: &State<EncodingKey>,
-) -> Result<Json<LoginResponse>, APIError> {
+    jar: &'a CookieJar<'_>
+) -> Result<Json<User>, APIError> {
     match auth_dao.login(credentials.0, jwt_encoding_key.inner()).await {
-        Ok(u) => Ok(Json(u)),
+        Ok(u) => {
+            jar.add_private(Cookie::new("Authorization", u.1.0.clone()));
+            Ok(Json(u.0))
+        },
         Err(err) => Err(APIError::InvalidCredentials(err.to_string())),
     }
 }

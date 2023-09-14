@@ -44,18 +44,21 @@ impl<'r> FromRequest<'r> for User {
         let user_dao = request.rocket().state::<Box<dyn UsersDao + Sync + Send>>().unwrap();
         let auth_dao = request.rocket().state::<Box<dyn AuthDao + Sync + Send>>().unwrap();
 
-        let token = match request.headers().get_one("token") {
-            Some(token) => token,
-            None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
+
+        let authorization = match request.cookies().get_private("Authorization") {
+            Some(token) => token.to_string(),
+            None => return Outcome::Failure((Status::ImATeapot, TokenError::Missing))
         };
 
-        let token_blacklisted = auth_dao.token_blacklisted(Token(token.to_string())).await.map_err(|_| true).unwrap();
+        let authorization = authorization.split("=").skip(1).next().unwrap();
+
+        let token_blacklisted = auth_dao.token_blacklisted(Token(authorization.to_string())).await.map_err(|_| true).unwrap();
 
         if token_blacklisted {
             return Outcome::Failure((Status::Unauthorized, TokenError::Invalid));
         }
 
-        let decoded_claims = jsonwebtoken::decode::<TokenClaims>(token, decoding_key, &Validation::default());
+        let decoded_claims = jsonwebtoken::decode::<TokenClaims>(authorization, decoding_key, &Validation::default());
 
         let user_id = match decoded_claims {
             Ok(token_claims) => token_claims.claims.sub,

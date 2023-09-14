@@ -33,6 +33,7 @@ impl From<HandlerError> for APIError {
 pub fn app_routes() -> Vec<rocket::Route> {
     routes![
         // AUTH
+        auth_handler::status,
         auth_handler::login,
         auth_handler::logout,
         // USER

@@ -47,7 +47,7 @@ impl<'r> FromRequest<'r> for User {
 
         let authorization = match request.cookies().get_private("Authorization") {
             Some(token) => token.to_string(),
-            None => return Outcome::Failure((Status::ImATeapot, TokenError::Missing))
+            None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
         };
 
         let authorization = authorization.split("=").skip(1).next().unwrap();

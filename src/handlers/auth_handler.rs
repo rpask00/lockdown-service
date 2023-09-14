@@ -48,7 +48,8 @@ pub async fn login<'a>(
 }
 
 #[get("/logout")]
-pub async fn logout(_user: User, token: Token, auth_dao: &State<Box<dyn AuthDao + Sync + Send>>) -> Result<(), APIError> {
+pub async fn logout<'a>(_user: User, token: Token, auth_dao: &State<Box<dyn AuthDao + Sync + Send>>, jar: &'a CookieJar<'_>) -> Result<(), APIError> {
+    jar.remove_private(Cookie::named("Authorization"));
     auth_dao.logout(token).await.map_err(|e| APIError::InternalError(e.to_string()))?;
     Ok(())
 }

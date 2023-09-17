@@ -1,5 +1,5 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use rocket::{get, post, Request, State};
+use rocket::{get, options, post, Request, State};
 use rocket::http::{Cookie, CookieJar};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
@@ -23,12 +23,17 @@ impl<'r> FromRequest<'r> for Token {
     type Error = TokenError;
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let token = match request.cookies().get("Authorization") {
-            Some(token) => token,
+            Some(token) => token.value(),
             None => return Outcome::Failure((Status::Unauthorized, TokenError::Missing))
         };
 
-        Outcome::Success(Token(token.to_string()))
+        Outcome::Success(Token(String::from(token)))
     }
+}
+
+#[options("/login")]
+pub async fn allow_login() -> &'static str {
+    "ok"
 }
 
 #[post("/login", data = "<credentials>")]

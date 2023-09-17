@@ -34,6 +34,7 @@ pub fn app_routes() -> Vec<rocket::Route> {
     routes![
         // AUTH
         auth_handler::status,
+        auth_handler::allow_login,
         auth_handler::login,
         auth_handler::logout,
         // USER

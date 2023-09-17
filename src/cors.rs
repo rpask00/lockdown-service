@@ -1,6 +1,6 @@
+use rocket::{Request, Response};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{ContentType, Header, Method, Status};
-use rocket::{Request, Response};
 
 pub struct CORS;
 
@@ -15,12 +15,15 @@ impl Fairing for CORS {
 
     // source: https://stackoverflow.com/questions/62412361/how-to-set-up-cors-or-options-for-rocket-rs
     async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
-        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Origin", "https://127.0.0.1:4100"));
+        // response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+
         response.set_header(Header::new(
             "Access-Control-Allow-Methods",
             "POST, GET, PATCH, DELETE, OPTIONS",
         ));
-        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        // response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Credentials"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
 
         // source: https://webprogramming.ninja/2022/08/25/handling-options-requests-in-rust-using-rocket-with-cors/

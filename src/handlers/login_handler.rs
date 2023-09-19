@@ -1,4 +1,4 @@
-use rocket::{post, State};
+use rocket::{get, post, State};
 use rocket::serde::json::Json;
 
 use crate::APIError;
@@ -12,3 +12,11 @@ pub async fn create_login(user: User, login: Json<LoginDto>, login_dao: &State<B
         .map(|login| Json(login))
         .map_err(|err| APIError::InternalError(err.to_string()));
 }
+
+#[get("/logins")]
+pub async fn get_logins(user: User, login_dao: &State<Box<dyn LoginDao + Sync + Send>>) -> Result<Json<Vec<Login>>, APIError> {
+    return login_dao.get_logins(user.id).await
+        .map(|logins| Json(logins))
+        .map_err(|err| APIError::InternalError(err.to_string()));
+}
+

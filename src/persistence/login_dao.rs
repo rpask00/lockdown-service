@@ -7,6 +7,7 @@ use crate::models::login_model::{Login, LoginDto};
 #[async_trait]
 pub trait LoginDao {
     async fn create_login(&self, login: LoginDto, owner_id: i32) -> Result<Login, DBError>;
+    async fn get_logins(&self, owner_id: i32) -> Result<Vec<Login>, DBError>;
 }
 
 pub struct LoginDaoImpl {
@@ -49,5 +50,27 @@ impl LoginDao for LoginDaoImpl {
             linked_websites: record.linked_websites.split(",").map(|s| s.to_string()).collect(),
             collections: record.collections.split(",").map(|s| s.to_string()).collect(),
         })
+    }
+
+    async fn get_logins(&self, owner_id: i32) -> Result<Vec<Login>, DBError> {
+        let records = sqlx::query!(r#"
+            SELECT id, used_at, username, password, email, linked_websites, collections
+            FROM logins
+            WHERE owner_id = $1
+        "#,
+        owner_id
+        ).fetch_all(&self.db).await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+
+        Ok(records.iter().map(|record| Login {
+            id: record.id,
+            used_at: "".to_string(),
+            username: record.username.to_string(),
+            password: record.password.to_string(),
+            email: record.email.to_string(),
+            linked_websites: record.linked_websites.split(",").map(|s| s.to_string()).collect(),
+            collections: record.collections.split(",").map(|s| s.to_string()).collect(),
+        }).collect())
     }
 }

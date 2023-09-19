@@ -1,5 +1,4 @@
 use rocket::{Responder, routes};
-use rocket::request::FromRequest;
 
 use handlers_inner::*;
 
@@ -42,6 +41,7 @@ pub fn app_routes() -> Vec<rocket::Route> {
         user_handler::update_user,
         user_handler::delete_user,
          // LOGIN
-        login_handler::create_login
+        login_handler::create_login,
+        login_handler::get_logins,
     ]
 }

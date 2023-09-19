@@ -20,3 +20,10 @@ pub async fn get_logins(user: User, login_dao: &State<Box<dyn LoginDao + Sync + 
         .map_err(|err| APIError::InternalError(err.to_string()));
 }
 
+
+#[get("/login/<id>")]
+pub async fn get_login(id: i32, user: User, login_dao: &State<Box<dyn LoginDao + Sync + Send>>) -> Result<Json<Login>, APIError> {
+    return login_dao.get_login(id).await
+        .map(|login| Json(login))
+        .map_err(|err| APIError::InternalError(err.to_string()));
+}

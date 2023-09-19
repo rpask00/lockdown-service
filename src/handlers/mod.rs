@@ -43,5 +43,6 @@ pub fn app_routes() -> Vec<rocket::Route> {
          // LOGIN
         login_handler::create_login,
         login_handler::get_logins,
+        login_handler::get_login,
     ]
 }

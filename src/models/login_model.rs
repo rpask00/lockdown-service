@@ -6,6 +6,7 @@ use thiserror::Error;
 #[derive(Error, Debug, Serialize, Deserialize)]
 pub struct LoginDto {
     pub username: String,
+    pub note: String,
     pub password: String,
     pub email: String,
     pub linked_websites: Vec<String>,
@@ -18,6 +19,7 @@ pub struct Login {
     pub used_at: String,
     pub username: String,
     pub password: String,
+    pub note: String,
     pub email: String,
     pub linked_websites: Vec<String>,
     pub collections: Vec<String>,

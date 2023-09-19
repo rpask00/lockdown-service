@@ -6,8 +6,7 @@ use handlers_inner::*;
 mod handlers_inner;
 mod user_handler;
 pub mod auth_handler;
-
-
+mod login_handler;
 
 
 #[derive(Responder)]
@@ -41,6 +40,8 @@ pub fn app_routes() -> Vec<rocket::Route> {
         user_handler::get_user,
         user_handler::create_user,
         user_handler::update_user,
-        user_handler::delete_user
+        user_handler::delete_user,
+         // LOGIN
+        login_handler::create_login
     ]
 }

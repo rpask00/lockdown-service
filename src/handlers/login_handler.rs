@@ -1,4 +1,4 @@
-use rocket::{get, post, State};
+use rocket::{delete, get, post, State};
 use rocket::serde::json::Json;
 
 use crate::APIError;
@@ -26,4 +26,12 @@ pub async fn get_login(id: i32, user: User, login_dao: &State<Box<dyn LoginDao +
     return login_dao.get_login(id).await
         .map(|login| Json(login))
         .map_err(|err| APIError::InternalError(err.to_string()));
+}
+
+#[delete("/login/<id>")]
+pub async fn delete_login(id: i32, user: User, login_dao: &State<Box<dyn LoginDao + Sync + Send>>) -> Result<(), APIError> {
+    login_dao.delete_login(id).await
+        .map_err(|err| APIError::InternalError(err.to_string()))?;
+
+    return Ok(());
 }

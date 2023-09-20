@@ -9,6 +9,7 @@ pub trait LoginDao {
     async fn create_login(&self, login: LoginDto, owner_id: i32) -> Result<Login, DBError>;
     async fn get_logins(&self, owner_id: i32) -> Result<Vec<Login>, DBError>;
     async fn get_login(&self, id: i32) -> Result<Login, DBError>;
+    async fn delete_login(&self, id: i32) -> Result<(), DBError>;
 }
 
 pub struct LoginDaoImpl {
@@ -93,5 +94,13 @@ impl LoginDao for LoginDaoImpl {
             linked_websites: record.linked_websites.split(",").map(|s| s.to_string()).collect(),
             collections: record.collections.split(",").map(|s| s.to_string()).collect(),
         });
+    }
+
+    async fn delete_login(&self, id: i32) -> Result<(), DBError> {
+        sqlx::query!(r#" DELETE FROM logins WHERE id = $1"#, id).execute(&self.db).await.map_err(
+            |e| DBError::Other(Box::new(e))
+        )?;
+
+        Ok(())
     }
 }

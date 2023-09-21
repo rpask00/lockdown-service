@@ -1,4 +1,4 @@
-use rocket::{Responder, routes};
+use rocket::{options, Responder, routes};
 
 use handlers_inner::*;
 
@@ -12,6 +12,8 @@ mod login_handler;
 pub enum APIError {
     #[response(status = 400)]
     BadRequest(String),
+    #[response(status = 401)]
+    Unauthorized(String),
     #[response(status = 500)]
     InternalError(String),
     #[response(status = 401)]
@@ -27,12 +29,17 @@ impl From<HandlerError> for APIError {
     }
 }
 
+#[options("/<_..>")]
+pub async fn allow_options() -> &'static str {
+    "ok"
+}
+
 
 pub fn app_routes() -> Vec<rocket::Route> {
     routes![
+        self::allow_options,
         // AUTH
         auth_handler::status,
-        auth_handler::allow_login,
         auth_handler::login,
         auth_handler::logout,
         // USER
@@ -45,5 +52,6 @@ pub fn app_routes() -> Vec<rocket::Route> {
         login_handler::get_logins,
         login_handler::get_login,
         login_handler::delete_login,
+        login_handler::update_login,
     ]
 }

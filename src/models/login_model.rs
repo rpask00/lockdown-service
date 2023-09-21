@@ -5,12 +5,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize)]
 pub struct LoginDto {
-    pub username: String,
-    pub note: String,
-    pub password: String,
-    pub email: String,
-    pub linked_websites: Vec<String>,
-    pub collections: Vec<String>,
+    pub username: Option<String>,
+    pub note: Option<String>,
+    pub password: Option<String>,
+    pub email: Option<String>,
+    pub linked_websites: Option<Vec<String>>,
+    pub collections: Option<Vec<String>>,
 }
 
 #[derive(Error, Debug, Serialize, Deserialize)]

@@ -1,5 +1,5 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use rocket::{get, options, post, Request, State};
+use rocket::{get, post, Request, State};
 use rocket::http::{Cookie, CookieJar};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
@@ -31,10 +31,6 @@ impl<'r> FromRequest<'r> for Token {
     }
 }
 
-#[options("/login")]
-pub async fn allow_login() -> &'static str {
-    "ok"
-}
 
 #[post("/login", data = "<credentials>")]
 pub async fn login<'a>(

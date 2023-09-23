@@ -1,11 +1,11 @@
 use rocket::{delete, get, post, put, State};
-use rocket::http::hyper::body::HttpBody;
+use rocket::form::Form;
 use rocket::serde::json::Json;
 
 use crate::APIError;
 use crate::models::login_model::{Login, LoginDto};
 use crate::models::user_model::User;
-use crate::persistence::login_dao::LoginDao;
+use crate::persistence::login_dao::{Collection, LoginDao};
 
 #[post("/logins", data = "<login>")]
 pub async fn create_login(user: User, login: Json<LoginDto>, login_dao: &State<Box<dyn LoginDao + Sync + Send>>) -> Result<Json<Login>, APIError> {
@@ -31,14 +31,17 @@ pub async fn get_login(id: i32, user: User, login_dao: &State<Box<dyn LoginDao +
         .map_err(|err| APIError::InternalError(err.to_string()));
 }
 
-#[delete("/logins/<id>")]
-pub async fn delete_login(id: i32, user: User, login_dao: &State<Box<dyn LoginDao + Sync + Send>>) -> Result<(), APIError> {
-    validate_user_owns_login(user.id, id, login_dao).await?;
 
-    login_dao.delete_login(id).await
+#[delete("/logins", data = "<collection>")]
+pub async fn delete_login(collection: Form<Collection>, user: User, login_dao: &State<Box<dyn LoginDao + Sync + Send>>) -> Result<Json<Vec<i32>>, APIError> {
+    for id in &collection.ids {
+        validate_user_owns_login(user.id, *id, login_dao).await?;
+    }
+
+    login_dao.delete_logins(&collection.ids).await
         .map_err(|err| APIError::InternalError(err.to_string()))?;
 
-    return Ok(());
+    return Ok(Json(collection.ids.clone()));
 }
 
 #[put("/logins/<id>", data = "<login>")]

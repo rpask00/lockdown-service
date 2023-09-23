@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use rocket::FromForm;
 use rocket::http::hyper::body::HttpBody;
 use sqlx::PgPool;
 
@@ -11,8 +12,13 @@ pub trait LoginDao {
     async fn get_logins(&self, owner_id: i32) -> Result<Vec<Login>, DBError>;
     async fn get_login(&self, id: i32) -> Result<Login, DBError>;
     async fn get_login_owner(&self, id: i32) -> Result<i32, DBError>;
-    async fn delete_login(&self, id: i32) -> Result<(), DBError>;
+    async fn delete_logins(&self, ids: &Vec<i32>) -> Result<(), DBError>;
     async fn update_login(&self, id: i32, login: LoginDto) -> Result<Login, DBError>;
+}
+
+#[derive(FromForm)]
+pub struct Collection {
+    pub ids: Vec<i32>,
 }
 
 pub struct LoginDaoImpl {
@@ -107,8 +113,8 @@ impl LoginDao for LoginDaoImpl {
         return Ok(record.owner_id.unwrap());
     }
 
-    async fn delete_login(&self, id: i32) -> Result<(), DBError> {
-        sqlx::query!(r#" DELETE FROM logins WHERE id = $1"#, id).execute(&self.db).await.map_err(
+    async fn delete_logins(&self, ids: &Vec<i32>) -> Result<(), DBError> {
+        sqlx::query!(r#"DELETE FROM logins WHERE id = ANY($1)"#, ids).execute(&self.db).await.map_err(
             |e| DBError::Other(Box::new(e))
         )?;
 

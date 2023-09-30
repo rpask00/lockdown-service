@@ -6,6 +6,7 @@ use crate::models::user_model::User;
 pub mod user_model;
 pub mod auth_model;
 pub mod login_model;
+pub mod payment_model;
 
 
 #[derive(Error, Debug)]

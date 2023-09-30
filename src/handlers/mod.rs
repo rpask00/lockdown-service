@@ -6,6 +6,7 @@ mod handlers_inner;
 mod user_handler;
 pub mod auth_handler;
 mod login_handler;
+mod payment_handler;
 
 
 #[derive(Responder)]
@@ -53,5 +54,8 @@ pub fn app_routes() -> Vec<rocket::Route> {
         login_handler::get_login,
         login_handler::delete_login,
         login_handler::update_login,
+        // PAYMENT
+        payment_handler::create_payment,
+        payment_handler::get_payment,
     ]
 }

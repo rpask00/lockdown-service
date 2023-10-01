@@ -7,6 +7,7 @@ use crate::models::payment_model::{Payment, PaymentDto};
 #[async_trait]
 pub trait PaymentDao {
     async fn create_payment(&self, payment: PaymentDto, owner_id: i32) -> Result<Payment, DBError>;
+    async fn update_payment(&self, id: i32, payment_dto: PaymentDto) -> Result<Payment, DBError>;
     async fn get_payment(&self, id: i32) -> Result<Payment, DBError>;
     async fn get_payments(&self, owner_id: i32) -> Result<Vec<Payment>, DBError>;
     async fn delete_payment(&self, id: i32) -> Result<(), DBError>;
@@ -60,6 +61,56 @@ impl PaymentDao for PaymentDaoImpl {
             }
         );
     }
+
+
+    async fn update_payment(&self, id: i32, payment_dto: PaymentDto) -> Result<Payment, DBError> {
+        let mut payment = self.get_payment(id).await?;
+
+        if let Some(card_holder) = payment_dto.card_holder {
+            payment.card_holder = card_holder;
+        }
+        if let Some(card_number) = payment_dto.card_number {
+            payment.card_number = card_number;
+        }
+        if let Some(security_code) = payment_dto.security_code {
+            payment.security_code = security_code;
+        }
+        if let Some(expiration_month) = payment_dto.expiration_month {
+            payment.expiration_month = expiration_month;
+        }
+        if let Some(expiration_year) = payment_dto.expiration_year {
+            payment.expiration_year = expiration_year;
+        }
+        if let Some(name) = payment_dto.name {
+            payment.name = name;
+        }
+        if let Some(color) = payment_dto.color {
+            payment.color = color;
+        }
+        if let Some(note) = payment_dto.note {
+            payment.note = note;
+        }
+
+        sqlx::query!(r#"
+            Update payments set card_holder = $1, card_number = $2, security_code = $3, expiration_month = $4, expiration_year = $5, name = $6,color = $7, note = $8
+            where id = $9
+        "#,
+            payment.card_holder,
+            payment.card_number,
+            payment.security_code,
+            payment.expiration_month,
+            payment.expiration_year,
+            payment.name,
+            payment.color,
+            payment.note,
+            id
+        ).execute(&self.db)
+            .await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+        return Ok(payment);
+    }
+
 
     async fn get_payment(&self, id: i32) -> Result<Payment, DBError> {
         let record = sqlx::query!(r#"    SELECT * FROM payments WHERE id = $1"#, id).fetch_one(&self.db)

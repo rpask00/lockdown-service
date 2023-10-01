@@ -1,4 +1,4 @@
-use rocket::{get, post, State};
+use rocket::{delete, get, post, State};
 use rocket::serde::json::Json;
 
 use crate::APIError;
@@ -26,5 +26,11 @@ pub async fn get_payment(user: User, id: i32, payment_dao: &State<Box<dyn Paymen
 pub async fn get_payments(user: User, payment_dao: &State<Box<dyn PaymentDao + Sync + Send>>) -> Result<Json<Vec<Payment>>, APIError> {
     return payment_dao.get_payments(user.id).await
         .map(|payment| Json(payment))
+        .map_err(|err| APIError::InternalError(err.to_string()));
+}
+
+#[delete("/payments/<id>")]
+pub async fn delete_payment(user: User, id: i32, payment_dao: &State<Box<dyn PaymentDao + Sync + Send>>) -> Result<(), APIError> {
+    return payment_dao.delete_payment(id).await
         .map_err(|err| APIError::InternalError(err.to_string()));
 }

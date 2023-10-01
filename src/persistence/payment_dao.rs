@@ -9,6 +9,7 @@ pub trait PaymentDao {
     async fn create_payment(&self, payment: PaymentDto, owner_id: i32) -> Result<Payment, DBError>;
     async fn get_payment(&self, id: i32) -> Result<Payment, DBError>;
     async fn get_payments(&self, owner_id: i32) -> Result<Vec<Payment>, DBError>;
+    async fn delete_payment(&self, id: i32) -> Result<(), DBError>;
 }
 
 
@@ -96,5 +97,13 @@ impl PaymentDao for PaymentDaoImpl {
             color: r.color.to_string(),
             note: r.note.to_owned().unwrap_or("".to_string()),
         }).collect());
+    }
+
+    async fn delete_payment(&self, id: i32) -> Result<(), DBError> {
+        sqlx::query!(r#"DELETE FROM logins WHERE id = $1"#, id).execute(&self.db).await.map_err(
+            |e| DBError::Other(Box::new(e))
+        )?;
+
+        Ok(())
     }
 }

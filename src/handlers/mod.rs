@@ -58,5 +58,6 @@ pub fn app_routes() -> Vec<rocket::Route> {
         payment_handler::create_payment,
         payment_handler::get_payment,
         payment_handler::get_payments,
+        payment_handler::delete_payment,
     ]
 }

@@ -7,6 +7,7 @@ pub mod user_model;
 pub mod auth_model;
 pub mod login_model;
 pub mod payment_model;
+pub mod secured_note;
 
 
 #[derive(Error, Debug)]

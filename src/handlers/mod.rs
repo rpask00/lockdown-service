@@ -7,6 +7,7 @@ mod user_handler;
 pub mod auth_handler;
 mod login_handler;
 mod payment_handler;
+mod secured_note_handler;
 
 
 #[derive(Responder)]

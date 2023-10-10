@@ -1,1 +1,2 @@
-alter table logins rename column notes to note;
+alter table logins
+    rename column notes to note;

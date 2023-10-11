@@ -11,6 +11,7 @@ pub trait SecuredNoteDao {
     async fn get_secured_notes(&self, owner_id: i32) -> Result<Vec<SecuredNote>, DBError>;
     async fn update_secured_notes(&self, id: i32, secured_note: SecuredNoteDto) -> Result<SecuredNote, DBError>;
     async fn delete_secured_note(&self, id: i32) -> Result<(), DBError>;
+    async fn get_secured_note_owner(&self, id: i32) -> Result<i32, DBError>;
 }
 
 pub struct SecuredNoteDaoImpl {
@@ -43,8 +44,8 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
             id: record.id,
             name: record.name,
             content: record.content,
-            created_at: record.created_at.unwrap().to_string(),
-            modified_at: record.modified_at.unwrap().to_string(),
+            created_at: record.created_at.to_string(),
+            modified_at: record.modified_at.to_string(),
             color: record.color,
         })
     }
@@ -62,8 +63,8 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
             id: record.id,
             name: record.name,
             content: record.content,
-            created_at: record.created_at.unwrap().to_string(),
-            modified_at: record.modified_at.unwrap().to_string(),
+            created_at: record.created_at.to_string(),
+            modified_at: record.modified_at.to_string(),
             color: record.color,
         })
     }
@@ -72,6 +73,7 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
         let record = sqlx::query!(r#"
            Select * FROM secured_notes
             WHERE owner_id = $1
+            ORDER BY id
         "#,
             owner_id
         ).fetch_all(&self.db).await
@@ -82,8 +84,8 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
             id: r.id,
             name: r.name.to_string(),
             content: r.content.to_string(),
-            created_at: r.created_at.unwrap().to_string(),
-            modified_at: r.modified_at.unwrap().to_string(),
+            created_at: r.created_at.to_string(),
+            modified_at: r.modified_at.to_string(),
             color: r.color.to_string(),
         }).collect())
     }
@@ -105,11 +107,13 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
 
         let record = sqlx::query!(r#"
             UPDATE secured_notes set name = $1, content = $2, color = $3
+            WHERE id = $4
             RETURNING *
         "#,
             _secured_note.name,
             _secured_note.content,
             _secured_note.color,
+            id
         ).fetch_one(&self.db)
             .await
             .map_err(|e| DBError::Other(Box::new(e)))?;
@@ -118,8 +122,8 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
             id: record.id,
             name: record.name,
             content: record.content,
-            created_at: record.created_at.unwrap().to_string(),
-            modified_at: record.modified_at.unwrap().to_string(),
+            created_at: record.created_at.to_string(),
+            modified_at: record.modified_at.to_string(),
             color: record.color,
         })
     }
@@ -131,6 +135,14 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
             .map_err(|e| DBError::Other(Box::new(e)))?;
 
         Ok(())
+    }
+
+    async fn get_secured_note_owner(&self, id: i32) -> Result<i32, DBError> {
+        let record = sqlx::query!(r#" SELECT owner_id FROM secured_notes WHERE id = $1"#, id).fetch_one(&self.db).await.map_err(
+            |e| DBError::Other(Box::new(e))
+        )?;
+
+        return Ok(record.owner_id.unwrap());
     }
 }
 

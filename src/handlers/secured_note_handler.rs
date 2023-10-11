@@ -54,10 +54,11 @@ pub async fn delete_secured_note(user: User, id: i32, secured_notes_dao: &State<
 
 
 async fn validate_user_owns_secured_note(user_id: i32, note_id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<(), APIError> {
-    let note = secured_notes_dao.get_secured_note(note_id).await
+    let note_owner_id = secured_notes_dao.get_secured_note_owner(note_id).await
         .map_err(|err| APIError::InternalError(err.to_string()))?;
 
-    if note.id != user_id {
+
+    if note_owner_id != user_id {
         return Err(APIError::Unauthorized(String::from("Note doesn't belong to user.")));
     }
 

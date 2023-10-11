@@ -61,5 +61,11 @@ pub fn app_routes() -> Vec<rocket::Route> {
         payment_handler::get_payments,
         payment_handler::delete_payment,
         payment_handler::update_payment,
+        // SECURED NOTE
+        secured_note_handler::create_secured_note,
+        secured_note_handler::get_secured_note,
+        secured_note_handler::get_secured_notes,
+        secured_note_handler::update_secured_note,
+        secured_note_handler::delete_secured_note,
     ]
 }

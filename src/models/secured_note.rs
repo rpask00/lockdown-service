@@ -16,11 +16,9 @@ pub struct SecuredNote {
 
 #[derive(Debug, Error, Serialize, Deserialize)]
 pub struct SecuredNoteDto {
-    pub name: String,
-    pub content: String,
-    pub created_at: String,
-    pub modified_at: String,
-    pub color: String,
+    pub name: Option<String>,
+    pub content: Option<String>,
+    pub color: Option<String>,
 }
 
 

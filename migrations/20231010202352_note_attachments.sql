@@ -3,7 +3,7 @@ create table note_attachments
 (
     id         SERIAL PRIMARY KEY,
     name       VARCHAR(255) NOT NULL,
-    created_at timestamp not null default now(),
+    created_at timestamp    not null default now(),
     size       INTEGER      NOT NULL,
     type       VARCHAR(255) NOT NULL,
     note_id    INT          NOT NULL,

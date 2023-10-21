@@ -1029,6 +1029,7 @@ dependencies = [
  "pretty_env_logger",
  "rand",
  "rocket",
+ "rocket-multipart-form-data",
  "serde",
  "sqlx",
  "thiserror",
@@ -1563,6 +1564,18 @@ dependencies = [
  "ubyte",
  "version_check",
  "yansi 0.5.1",
+]
+
+[[package]]
+name = "rocket-multipart-form-data"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "391bc559812c28c5f4d02a53fc29e229c3092aafa01cf48b9b593782b35f8950"
+dependencies = [
+ "mime",
+ "multer",
+ "rocket",
+ "tokio-util",
 ]
 
 [[package]]

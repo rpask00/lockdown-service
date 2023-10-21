@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 
 use crate::models::DBError;
-use crate::models::secured_note::{SecuredNote, SecuredNoteDto};
+use crate::models::secured_note::{File, FileDto, SecuredNote, SecuredNoteDto};
 
 #[async_trait]
 pub trait SecuredNoteDao {
@@ -12,6 +12,7 @@ pub trait SecuredNoteDao {
     async fn update_secured_notes(&self, id: i32, secured_note: SecuredNoteDto) -> Result<SecuredNote, DBError>;
     async fn delete_secured_note(&self, id: i32) -> Result<(), DBError>;
     async fn get_secured_note_owner(&self, id: i32) -> Result<i32, DBError>;
+    async fn save_file(&self, owner_id: i32, file: FileDto, note_id: i32) -> Result<File, DBError>;
 }
 
 pub struct SecuredNoteDaoImpl {
@@ -143,6 +144,28 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
         )?;
 
         return Ok(record.owner_id.unwrap());
+    }
+
+    async fn save_file(&self, owner_id: i32, file: FileDto, note_id: i32) -> Result<File, DBError> {
+        let record = sqlx::query!(r#"
+            INSERT INTO note_attachments (name, size, type, note_id, owner_id)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, name, created_at, size, type, note_id, type as file_type, owner_id
+        "#,
+        file.name, file.size, file.file_type, note_id, owner_id
+        ).fetch_one(&self.db).await
+            .map_err(|err| DBError::Other(Box::new(err)))?;
+
+
+        Ok(File {
+            id: record.id,
+            name: record.name,
+            created_at: record.created_at.unwrap().to_string(),
+            size: record.size,
+            file_type: record.file_type,
+            note_id: record.note_id,
+            owner_id: record.owner_id.unwrap(),
+        })
     }
 }
 

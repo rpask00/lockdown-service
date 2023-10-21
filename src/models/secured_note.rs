@@ -21,6 +21,24 @@ pub struct SecuredNoteDto {
     pub color: Option<String>,
 }
 
+#[derive(Debug, Error, Deserialize, Serialize)]
+pub struct File {
+    pub id: i32,
+    pub name: String,
+    pub owner_id: i32,
+    pub note_id: i32,
+    pub size: i32,
+    pub created_at: String,
+    pub file_type: String,
+}
+
+#[derive(Debug, Error, Deserialize, Serialize)]
+pub struct FileDto {
+    pub name: String,
+    pub size: i32,
+    pub file_type: String,
+}
+
 
 impl Display for SecuredNote {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -30,6 +48,19 @@ impl Display for SecuredNote {
 
 
 impl Display for SecuredNoteDto {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).as_str())
+    }
+}
+
+impl Display for File {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).as_str())
+    }
+}
+
+
+impl Display for FileDto {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(format!("{:?}", self).as_str())
     }

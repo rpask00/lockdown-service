@@ -1,15 +1,21 @@
-use rocket::{delete, get, post, put, State};
+use std::path::Path;
+
+use rocket::{Data, delete, get, post, put, State};
+use rocket::data::{FromData, ToByteUnit};
+use rocket::http::ContentType;
 use rocket::serde::json::Json;
+use rocket_multipart_form_data::{MultipartFormData, MultipartFormDataField, MultipartFormDataOptions};
+use tokio::fs;
 
 use crate::APIError;
-use crate::models::secured_note::{SecuredNote, SecuredNoteDto};
+use crate::models::secured_note::{File, FileDto, SecuredNote, SecuredNoteDto};
 use crate::models::user_model::User;
 use crate::persistence::secured_note_dao::SecuredNoteDao;
 
 #[post("/secured_notes", data = "<secured_note>")]
 pub async fn create_secured_note(user: User, secured_note: Json<SecuredNoteDto>, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<Json<SecuredNote>, APIError> {
     let secured_note = secured_notes_dao.create_secured_note(secured_note.0, user.id).await
-        .map(|result| Json(result))
+        .map(Json)
         .map_err(|err| APIError::InternalError(err.to_string()))?;
 
     Ok(secured_note)
@@ -52,6 +58,41 @@ pub async fn delete_secured_note(user: User, id: i32, secured_notes_dao: &State<
     Ok(())
 }
 
+
+#[post("/secured_notes/<id>/upload", data = "<paste>")]
+pub async fn upload<'r>(user: User, id: i32, ct: &ContentType, paste: Data<'r>, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<Json<Vec<File>>, APIError> {
+    validate_user_owns_secured_note(user.id, id, secured_notes_dao).await?;
+
+    let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+        MultipartFormDataField::file("file").size_limit(100.megabytes().as_u64()),
+    ]);
+
+    let multipart_form = MultipartFormData::parse(ct, paste, options).await.unwrap();
+    let file_data = multipart_form.files.get("file").unwrap();
+
+
+    let mut response_files = vec![];
+
+
+    for file in file_data {
+        let file_name = file.file_name.as_ref().unwrap();
+        let target_path = format!("upload/{}", file_name);
+        fs::copy(&file.path, Path::new(&target_path)).await.expect("Error");
+
+
+        let file_dto = FileDto {
+            name: file_name.to_owned(),
+            file_type: file.content_type.as_ref().unwrap().to_string(),
+            size: fs::metadata(&file.path).await.unwrap().len() as i32,
+        };
+
+        let _file = secured_notes_dao.save_file(user.id, file_dto, id).await.unwrap();
+
+        response_files.push(_file);
+    }
+
+    Ok(Json(response_files))
+}
 
 async fn validate_user_owns_secured_note(user_id: i32, note_id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<(), APIError> {
     let note_owner_id = secured_notes_dao.get_secured_note_owner(note_id).await

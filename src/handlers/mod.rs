@@ -68,5 +68,6 @@ pub fn app_routes() -> Vec<rocket::Route> {
         secured_note_handler::update_secured_note,
         secured_note_handler::delete_secured_note,
         secured_note_handler::upload,
+        secured_note_handler::secured_note_attachments,
     ]
 }

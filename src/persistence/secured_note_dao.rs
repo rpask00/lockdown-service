@@ -13,6 +13,7 @@ pub trait SecuredNoteDao {
     async fn delete_secured_note(&self, id: i32) -> Result<(), DBError>;
     async fn get_secured_note_owner(&self, id: i32) -> Result<i32, DBError>;
     async fn save_file(&self, owner_id: i32, file: FileDto, note_id: i32) -> Result<File, DBError>;
+    async fn get_secured_note_attachments(&self, user_id: i32) -> Result<Vec<File>, DBError>;
 }
 
 pub struct SecuredNoteDaoImpl {
@@ -144,6 +145,25 @@ impl SecuredNoteDao for SecuredNoteDaoImpl {
         )?;
 
         return Ok(record.owner_id.unwrap());
+    }
+
+    async fn get_secured_note_attachments(&self, note_id: i32) -> Result<Vec<File>, DBError> {
+        let records = sqlx::query!(r#"
+            SELECT type as file_type, * from note_attachments
+            where note_id = $1
+        "#, note_id).fetch_all(&self.db).await
+            .map_err(|e| DBError::Other(Box::new(e)))?;
+
+
+        Ok(records.iter().map(|record| File {
+            id: record.id,
+            name: record.name.to_string(),
+            created_at: record.created_at.unwrap().to_string(),
+            size: record.size,
+            file_type: record.file_type.to_string(),
+            note_id: record.note_id,
+            owner_id: record.owner_id.unwrap(),
+        }).collect())
     }
 
     async fn save_file(&self, owner_id: i32, file: FileDto, note_id: i32) -> Result<File, DBError> {

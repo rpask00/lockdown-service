@@ -59,7 +59,7 @@ pub async fn delete_secured_note(user: User, id: i32, secured_notes_dao: &State<
 }
 
 
-#[post("/secured_notes/<id>/upload", data = "<paste>")]
+#[post("/secured_notes/<id>/attachments", data = "<paste>")]
 pub async fn upload<'r>(user: User, id: i32, ct: &ContentType, paste: Data<'r>, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<Json<Vec<File>>, APIError> {
     validate_user_owns_secured_note(user.id, id, secured_notes_dao).await?;
 
@@ -93,6 +93,18 @@ pub async fn upload<'r>(user: User, id: i32, ct: &ContentType, paste: Data<'r>, 
 
     Ok(Json(response_files))
 }
+
+#[get("/secured_notes/<id>/attachments")]
+pub async fn secured_note_attachments(user: User, id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<Json<Vec<File>>, APIError> {
+    validate_user_owns_secured_note(user.id, id, secured_notes_dao).await?;
+
+    let files = secured_notes_dao.get_secured_note_attachments(id).await
+        .map_err(|err| APIError::InternalError(err.to_string()))?;
+
+
+    Ok(Json(files))
+}
+
 
 async fn validate_user_owns_secured_note(user_id: i32, note_id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<(), APIError> {
     let note_owner_id = secured_notes_dao.get_secured_note_owner(note_id).await

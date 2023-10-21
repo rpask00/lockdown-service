@@ -76,8 +76,6 @@ pub async fn upload<'r>(user: User, id: i32, ct: &ContentType, paste: Data<'r>, 
 
     for file in file_data {
         let file_name = file.file_name.as_ref().unwrap();
-        let target_path = format!("upload/{}", file_name);
-        fs::copy(&file.path, Path::new(&target_path)).await.expect("Error");
 
 
         let file_dto = FileDto {
@@ -87,7 +85,8 @@ pub async fn upload<'r>(user: User, id: i32, ct: &ContentType, paste: Data<'r>, 
         };
 
         let _file = secured_notes_dao.save_file(user.id, file_dto, id).await.unwrap();
-
+        let target_path = format!("upload/{}", _file.id);
+        fs::copy(&file.path, Path::new(&target_path)).await.expect("Error");
         response_files.push(_file);
     }
 
@@ -103,6 +102,17 @@ pub async fn secured_note_attachments(user: User, id: i32, secured_notes_dao: &S
 
 
     Ok(Json(files))
+}
+
+#[get("/attachments/<id>")]
+pub async fn download_attachment(user: User, id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<fs::File, APIError> {
+    let file = secured_notes_dao.get_secured_note_attachment(id).await
+        .map_err(|err| APIError::InternalError(err.to_string()))?;
+
+    validate_user_owns_secured_note(user.id, file.note_id, secured_notes_dao).await?;
+
+    fs::File::open(format!("upload/{}", file.id)).await
+        .map_err(|err| APIError::InternalError(err.to_string()))
 }
 
 

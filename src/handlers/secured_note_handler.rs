@@ -53,6 +53,13 @@ pub async fn update_secured_note(user: User, id: i32, secured_note: Json<Secured
 #[delete("/secured_notes/<id>")]
 pub async fn delete_secured_note(user: User, id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<(), APIError> {
     validate_user_owns_secured_note(user.id, id, secured_notes_dao).await?;
+    let note_attachments = secured_notes_dao.get_secured_note_attachments(id).await.map_err(|err| APIError::InternalError(err.to_string()))?;
+
+
+    for attachment in note_attachments {
+        fs::remove_file(format!("upload/{}", attachment.id)).await.unwrap();
+    }
+
     secured_notes_dao.delete_secured_note(id).await.map_err(|err| APIError::InternalError(err.to_string()))?;
 
     Ok(())

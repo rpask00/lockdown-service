@@ -4,5 +4,6 @@
 .vscode
 .fleet
 upload
+assets/backup
 /src/bin/playground.rs
 /assets/example.json

@@ -16,6 +16,8 @@ pub enum DBError {
     InvalidUUID(String),
     #[error("Database error occurred")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
+    #[error("Database error occurred")]
+    Other2,
 }
 
 // source: https://www.postgresql.org/docs/current/errcodes-appendix.html

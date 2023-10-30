@@ -122,6 +122,21 @@ pub async fn download_attachment(user: User, id: i32, secured_notes_dao: &State<
         .map_err(|err| APIError::InternalError(err.to_string()))
 }
 
+#[delete("/attachments/<id>")]
+pub async fn delete_attachment(user: User, id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<(), APIError> {
+    let file = secured_notes_dao.get_secured_note_attachment(id).await
+        .map_err(|err| APIError::InternalError(err.to_string()))?;
+
+    validate_user_owns_secured_note(user.id, file.note_id, secured_notes_dao).await?;
+
+    secured_notes_dao.delete_secured_note_attachment(id).await.map_err(|err| APIError::InternalError(err.to_string()))?;
+
+    fs::remove_file(format!("upload/{}", id)).await
+        .map_err(|err| APIError::InternalError(err.to_string()))?;
+
+    Ok(())
+}
+
 
 async fn validate_user_owns_secured_note(user_id: i32, note_id: i32, secured_notes_dao: &State<Box<dyn SecuredNoteDao + Sync + Send>>) -> Result<(), APIError> {
     let note_owner_id = secured_notes_dao.get_secured_note_owner(note_id).await

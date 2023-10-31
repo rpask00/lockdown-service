@@ -16,7 +16,7 @@ pub enum DBError {
     InvalidUUID(String),
     #[error("Database error occurred")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
-    #[error("Database error occurred")]
+    #[error("Database error occurred 2")]
     Other2,
 }
 

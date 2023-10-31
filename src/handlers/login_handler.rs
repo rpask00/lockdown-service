@@ -28,7 +28,7 @@ pub async fn get_login(id: i32, user: User, login_dao: &State<Box<dyn LoginDao +
 
     return login_dao.get_login(id).await
         .map(|login| Json(login))
-        .map_err(|err| APIError::InternalError(err.to_string()));
+        .map_err(|_| APIError::NotFound(format!("Login with id {} not found", id)));
 }
 
 

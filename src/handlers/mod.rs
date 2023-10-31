@@ -14,6 +14,8 @@ mod secured_note_handler;
 pub enum APIError {
     #[response(status = 400)]
     BadRequest(String),
+    #[response(status = 404)]
+    NotFound(String),
     #[response(status = 401)]
     Unauthorized(String),
     #[response(status = 500)]

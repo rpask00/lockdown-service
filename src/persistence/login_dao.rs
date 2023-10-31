@@ -1,7 +1,11 @@
+use std::fmt::{Display, Formatter};
+
 use async_trait::async_trait;
+use error_stack::{Result, ResultExt};
 use rocket::FromForm;
 use rocket::http::hyper::body::HttpBody;
 use sqlx::PgPool;
+use thiserror::Error;
 
 use crate::models::DBError;
 use crate::models::login_model::{Login, LoginDto};
@@ -10,10 +14,10 @@ use crate::models::login_model::{Login, LoginDto};
 pub trait LoginDao {
     async fn create_login(&self, login: LoginDto, owner_id: i32) -> Result<Login, DBError>;
     async fn get_logins(&self, owner_id: i32) -> Result<Vec<Login>, DBError>;
-    async fn get_login(&self, id: i32) -> Result<Login, DBError>;
+    async fn get_login(&self, id: i32) -> Result<Login, LoginError>;
     async fn get_login_owner(&self, id: i32) -> Result<i32, DBError>;
     async fn delete_logins(&self, ids: &Vec<i32>) -> Result<(), DBError>;
-    async fn update_login(&self, id: i32, login: LoginDto) -> Result<Login, DBError>;
+    async fn update_login(&self, id: i32, login: LoginDto) -> Result<Login, LoginError>;
 }
 
 #[derive(FromForm)]
@@ -31,6 +35,23 @@ impl LoginDaoImpl {
     }
 }
 
+
+#[derive(Debug, Error)]
+pub enum LoginError {
+    InvalidInput(String),
+    Other,
+    DatabaseError,
+}
+
+impl Display for LoginError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoginError::InvalidInput(msg) => f.write_str(msg),
+            LoginError::Other => f.write_str("Something went wrong! Try again!"),
+            LoginError::DatabaseError => f.write_str("Error in database occurred."),
+        }
+    }
+}
 
 #[async_trait]
 impl LoginDao for LoginDaoImpl {
@@ -50,7 +71,8 @@ impl LoginDao for LoginDaoImpl {
             owner_id
         ).fetch_one(&self.db)
             .await
-            .map_err(|e| DBError::Other(Box::new(e)))?;
+            .change_context(DBError::Other2)?;
+
 
 
         Ok(Login {
@@ -73,7 +95,8 @@ impl LoginDao for LoginDaoImpl {
         "#,
         owner_id
         ).fetch_all(&self.db).await
-            .map_err(|e| DBError::Other(Box::new(e)))?;
+            .change_context(DBError::Other2)?;
+
 
 
         Ok(records.iter().map(|record| Login {
@@ -88,10 +111,10 @@ impl LoginDao for LoginDaoImpl {
         }).collect())
     }
 
-    async fn get_login(&self, id: i32) -> Result<Login, DBError> {
-        let record = sqlx::query!(r#" SELECT * FROM logins WHERE id = $1"#, id).fetch_one(&self.db).await.map_err(
-            |e| DBError::Other(Box::new(e))
-        )?;
+    async fn get_login(&self, id: i32) -> Result<Login, LoginError> {
+        let record = sqlx::query!(r#" SELECT * FROM logins WHERE id = $1"#, id).fetch_one(&self.db).await
+            .change_context(DBError::Other2)
+            .change_context(LoginError::DatabaseError)?;
 
         return Ok(Login {
             id: record.id,
@@ -106,9 +129,8 @@ impl LoginDao for LoginDaoImpl {
     }
 
     async fn get_login_owner(&self, id: i32) -> Result<i32, DBError> {
-        let record = sqlx::query!(r#" SELECT owner_id FROM logins WHERE id = $1"#, id).fetch_one(&self.db).await.map_err(
-            |e| DBError::Other(Box::new(e))
-        )?;
+        let record = sqlx::query!(r#" SELECT owner_id FROM logins WHERE id = $1"#, id).fetch_one(&self.db).await
+            .change_context(DBError::Other2)?;
 
         return Ok(record.owner_id.unwrap());
     }
@@ -121,7 +143,7 @@ impl LoginDao for LoginDaoImpl {
         Ok(())
     }
 
-    async fn update_login(&self, id: i32, login_dao: LoginDto) -> Result<Login, DBError> {
+    async fn update_login(&self, id: i32, login_dao: LoginDto) -> Result<Login, LoginError> {
         let mut login = self.get_login(id).await?;
 
         if let Some(password) = login_dao.password {
@@ -157,7 +179,8 @@ impl LoginDao for LoginDaoImpl {
             id
         ).execute(&self.db)
             .await
-            .map_err(|e| DBError::Other(Box::new(e)))?;
+            .change_context(DBError::Other2)
+            .change_context(LoginError::DatabaseError)?;
 
         return Ok(login);
     }

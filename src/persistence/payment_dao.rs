@@ -1,5 +1,10 @@
+use std::fmt::{Display, Formatter};
+
 use async_trait::async_trait;
+use error_stack::Result;
+use error_stack::ResultExt;
 use sqlx::PgPool;
+use thiserror::Error;
 
 use crate::models::DBError;
 use crate::models::payment_model::{Payment, PaymentDto};
@@ -7,10 +12,10 @@ use crate::models::payment_model::{Payment, PaymentDto};
 #[async_trait]
 pub trait PaymentDao {
     async fn create_payment(&self, payment: PaymentDto, owner_id: i32) -> Result<Payment, DBError>;
-    async fn update_payment(&self, id: i32, payment_dto: PaymentDto) -> Result<Payment, DBError>;
-    async fn get_payment(&self, id: i32) -> Result<Payment, DBError>;
-    async fn get_payments(&self, owner_id: i32) -> Result<Vec<Payment>, DBError>;
-    async fn delete_payment(&self, id: i32) -> Result<(), DBError>;
+    async fn update_payment(&self, id: i32, payment_dto: PaymentDto) -> Result<Payment, PaymentError>;
+    async fn get_payment(&self, id: i32) -> Result<Payment, PaymentError>;
+    async fn get_payments(&self, owner_id: i32) -> Result<Vec<Payment>, PaymentError>;
+    async fn delete_payment(&self, id: i32) -> Result<(), PaymentError>;
 }
 
 
@@ -21,6 +26,23 @@ pub struct PaymentDaoImpl {
 impl PaymentDaoImpl {
     pub fn new(db: PgPool) -> Self {
         PaymentDaoImpl { db }
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum PaymentError {
+    InvalidInput(String),
+    Other,
+    DatabaseError,
+}
+
+impl Display for PaymentError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PaymentError::InvalidInput(msg) => f.write_str(msg),
+            PaymentError::Other => f.write_str("Something went wrong! Try again!"),
+            PaymentError::DatabaseError => f.write_str("Error in database occurred."),
+        }
     }
 }
 
@@ -63,7 +85,7 @@ impl PaymentDao for PaymentDaoImpl {
     }
 
 
-    async fn update_payment(&self, id: i32, payment_dto: PaymentDto) -> Result<Payment, DBError> {
+    async fn update_payment(&self, id: i32, payment_dto: PaymentDto) -> Result<Payment, PaymentError> {
         let mut payment = self.get_payment(id).await?;
 
         if let Some(card_holder) = payment_dto.card_holder {
@@ -106,16 +128,19 @@ impl PaymentDao for PaymentDaoImpl {
             id
         ).execute(&self.db)
             .await
-            .map_err(|e| DBError::Other(Box::new(e)))?;
+            .change_context(DBError::Other2)
+            .change_context(PaymentError::DatabaseError)?;
+
 
         return Ok(payment);
     }
 
 
-    async fn get_payment(&self, id: i32) -> Result<Payment, DBError> {
-        let record = sqlx::query!(r#"    SELECT * FROM payments WHERE id = $1"#, id).fetch_one(&self.db)
+    async fn get_payment(&self, id: i32) -> Result<Payment, PaymentError> {
+        let record = sqlx::query!(r#"SELECT * FROM payments WHERE id = $1"#, id).fetch_one(&self.db)
             .await
-            .map_err(|e| DBError::Other(Box::new(e)))?;
+            .change_context(DBError::Other2)
+            .change_context(PaymentError::DatabaseError)?;
 
 
         return Ok(Payment {
@@ -131,11 +156,13 @@ impl PaymentDao for PaymentDaoImpl {
         });
     }
 
-    async fn get_payments(&self, owner_id: i32) -> Result<Vec<Payment>, DBError> {
+    async fn get_payments(&self, owner_id: i32) -> Result<Vec<Payment>, PaymentError> {
         let record = sqlx::query!(r#"
                 SELECT * FROM payments WHERE owner_id = $1
             "#, owner_id ).fetch_all(&self.db)
-            .await.map_err(|err| DBError::Other(Box::new(err)))?;
+            .await
+            .change_context(DBError::Other2)
+            .change_context(PaymentError::DatabaseError)?;
 
         return Ok(record.iter().map(|r| Payment {
             id: r.id,
@@ -150,10 +177,11 @@ impl PaymentDao for PaymentDaoImpl {
         }).collect());
     }
 
-    async fn delete_payment(&self, id: i32) -> Result<(), DBError> {
-        sqlx::query!(r#"DELETE FROM logins WHERE id = $1"#, id).execute(&self.db).await.map_err(
-            |e| DBError::Other(Box::new(e))
-        )?;
+    async fn delete_payment(&self, payment_id: i32) -> Result<(), PaymentError> {
+        sqlx::query!(r#"DELETE FROM logins WHERE id = $1"#, payment_id).execute(&self.db).await
+            .change_context(DBError::Other2)
+            .attach_printable(format!("Deleting Payment method with id {} failed", payment_id))
+            .change_context(PaymentError::DatabaseError)?;
 
         Ok(())
     }
